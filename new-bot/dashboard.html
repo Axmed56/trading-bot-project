@@ -1,1 +1,346 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>ZAYA – لوحة مراقبة الفيوتشر (تجريبية)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #050816;
+      --card: #0b1020;
+      --accent: #12d3cf;
+      --accent-soft: rgba(18, 211, 207, 0.12);
+      --danger: #ff4d4f;
+      --success: #52c41a;
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --border: #1f2933;
+    }
 
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #111827 0, #020617 45%, #000 100%);
+      color: var(--text);
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 1150px;
+      padding: 18px 10px 30px;
+    }
+
+    .header {
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pill {
+      font-size: 0.7rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      background: rgba(18, 211, 207, 0.09);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--success);
+      box-shadow: 0 0 0 4px rgba(82, 196, 26, 0.25);
+    }
+
+    .status-text {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .subtitle {
+      font-size: 0.72rem;
+      color: var(--muted);
+      max-width: 650px;
+    }
+
+    .card {
+      background: linear-gradient(135deg, rgba(18, 211, 207, 0.03), rgba(15, 23, 42, 0.9));
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: 0 22px 40px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: radial-gradient(circle at top right, rgba(18, 211, 207, 0.08), transparent 55%);
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .last-refresh {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .badge-small {
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: var(--muted);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.76rem;
+    }
+
+    thead {
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    th, td {
+      padding: 7px 8px;
+      text-align: center;
+      border-bottom: 1px solid rgba(31, 41, 55, 0.7);
+      white-space: nowrap;
+    }
+
+    th {
+      font-weight: 600;
+      color: #e5e7eb;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tbody tr:nth-child(even) {
+      background: rgba(15, 23, 42, 0.85);
+    }
+
+    tbody tr:nth-child(odd) {
+      background: rgba(15, 23, 42, 0.65);
+    }
+
+    tbody tr:hover {
+      background: rgba(18, 211, 207, 0.08);
+    }
+
+    .pair {
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .exchange {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .value {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .spread-pos {
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .spread-neg {
+      color: var(--danger);
+      font-weight: 600;
+    }
+
+    .spread-zero {
+      color: var(--muted);
+    }
+
+    .small {
+      font-size: 0.68rem;
+      color: var(--muted);
+    }
+
+    .footer-note {
+      padding: 8px 12px 10px;
+      font-size: 0.65rem;
+      color: var(--muted);
+      background: radial-gradient(circle at bottom left, rgba(18, 211, 207, 0.07), transparent 60%);
+    }
+
+    .footer-note span {
+      color: var(--accent);
+    }
+
+    @media (max-width: 768px) {
+      .shell {
+        padding: 10px 6px 20px;
+      }
+      .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+      th, td {
+        padding: 6px 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="header">
+      <div class="title-row">
+        <h1>
+          ZAYA – لوحة مراقبة الفيوتشر
+          <span class="pill">نسخة تجريبية</span>
+        </h1>
+        <div class="status-text">
+          <span class="status-dot"></span>
+          <span id="status-label">LIVE WebSocket Feed</span>
+        </div>
+      </div>
+      <p class="subtitle">
+        مراقبة فروق الأسعار بين <strong>Binance</strong> و<strong>Bybit</strong> لعقود
+        <span style="color:var(--accent)">BTCUSDT / ETHUSDT / SOLUSDT</span> في الزمن الحقيقي،
+        مع حساب السبريد ونبض زمني لكل زوج.
+      </p>
+    </header>
+
+    <section class="card">
+      <div class="card-header">
+        <div>
+          آخر تحديث (UTC):
+          <span class="last-refresh" id="last-refresh">—</span>
+        </div>
+        <div class="badge-small">تحديث كل ٢ ثانية من ملف live_feed.json</div>
+      </div>
+
+      <div style="overflow-x:auto; max-height: 70vh;">
+        <table>
+          <thead>
+            <tr>
+              <th>الزوج</th>
+              <th>سعر Binance</th>
+              <th>سعر Bybit</th>
+              <th>السبريد (Bybit - Binance)</th>
+              <th>آخر تحديث للزوج (UTC)</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <tr>
+              <td colspan="5" class="small">في انتظار البيانات من السيرفر...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="footer-note">
+        هذه لوحة مراقبة <span>للاطلاع فقط</span> ولا تُعتبر توصية استثمارية أو نظام تنفيذ أوامر.
+      </div>
+    </section>
+  </div>
+
+  <script>
+    async function fetchLiveFeed() {
+      try {
+        const resp = await fetch("/api/live-feed?ts=" + Date.now(), { cache: "no-store" });
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        const data = await resp.json();
+        renderTable(data);
+      } catch (err) {
+        console.error("fetch error:", err);
+        document.getElementById("status-label").textContent = "Connection issue – retrying...";
+      }
+    }
+
+    function formatNumber(value, decimals = 2) {
+      if (value === undefined || value === null || Number.isNaN(Number(value))) return "—";
+      return Number(value).toFixed(decimals);
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById("table-body");
+      tbody.innerHTML = "";
+
+      const symbolsOrder = ["BTCUSDT", "ETHUSDT", "SOLUSDT"];
+      const now = new Date();
+      document.getElementById("last-refresh").textContent = now.toISOString().slice(0, 19) + "Z";
+
+      symbolsOrder.forEach(sym => {
+        const row = data[sym] || {};
+        const binPrice = row.binance_price;
+        const bybPrice = row.bybit_price;
+        let spread = row.spread;
+
+        if (spread === undefined && binPrice !== undefined && bybPrice !== undefined) {
+          spread = Number(bybPrice) - Number(binPrice);
+        }
+
+        const ts = row.last_update_utc || row.timestamp;
+        let tsText = "—";
+        if (typeof ts === "string") {
+          tsText = ts.replace("T", " ").replace("Z", "Z");
+        } else if (typeof ts === "number") {
+          tsText = new Date(ts * 1000).toISOString().slice(0, 19) + "Z";
+        }
+
+        const tr = document.createElement("tr");
+
+        const spreadClass =
+          spread > 0 ? "spread-pos" :
+          spread < 0 ? "spread-neg" :
+          "spread-zero";
+
+        tr.innerHTML = `
+          <td>
+            <div class="pair">${sym}</div>
+          </td>
+          <td class="value">${formatNumber(binPrice, 2)}</td>
+          <td class="value">${formatNumber(bybPrice, 2)}</td>
+          <td class="value ${spreadClass}">${spread === undefined || spread === null ? "—" : spread.toFixed(4)}</td>
+          <td class="small">${tsText}</td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    // تحديث كل ثانيتين
+    fetchLiveFeed();
+    setInterval(fetchLiveFeed, 2000);
+  </script>
+</body>
+</html>
