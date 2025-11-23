@@ -1,0 +1,98 @@
+{
+  "generated_at": 1763925973.0905156,
+  "metrics": {
+    "BTCUSDT": {
+      "timeframes": {
+        "1m": {
+          "rsi": null,
+          "ema9": null,
+          "ema26": null,
+          "trend": null,
+          "signal": null
+        },
+        "5m": {
+          "rsi": null,
+          "ema9": null,
+          "ema26": null,
+          "trend": null,
+          "signal": null
+        },
+        "15m": {
+          "rsi": null,
+          "ema9": null,
+          "ema26": null,
+          "trend": null,
+          "signal": null
+        }
+      },
+      "summary": {
+        "trend": null,
+        "signal": null,
+        "confidence": null,
+        "source_tf": "5m"
+      }
+    },
+    "ETHUSDT": {
+      "timeframes": {
+        "1m": {
+          "rsi": null,
+          "ema9": null,
+          "ema26": null,
+          "trend": null,
+          "signal": null
+        },
+        "5m": {
+          "rsi": null,
+          "ema9": null,
+          "ema26": null,
+          "trend": null,
+          "signal": null
+        },
+        "15m": {
+          "rsi": null,
+          "ema9": null,
+          "ema26": null,
+          "trend": null,
+          "signal": null
+        }
+      },
+      "summary": {
+        "trend": null,
+        "signal": null,
+        "confidence": null,
+        "source_tf": "5m"
+      }
+    },
+    "SOLUSDT": {
+      "timeframes": {
+        "1m": {
+          "rsi": null,
+          "ema9": null,
+          "ema26": null,
+          "trend": null,
+          "signal": null
+        },
+        "5m": {
+          "rsi": null,
+          "ema9": null,
+          "ema26": null,
+          "trend": null,
+          "signal": null
+        },
+        "15m": {
+          "rsi": null,
+          "ema9": null,
+          "ema26": null,
+          "trend": null,
+          "signal": null
+        }
+      },
+      "summary": {
+        "trend": null,
+        "signal": null,
+        "confidence": null,
+        "source_tf": "5m"
+      }
+    }
+  }
+}

@@ -1,0 +1,65 @@
+# bybit_orderbook_pybit.py
+"""
+استقبال دفتر الأوامر من Bybit باستخدام مكتبة pybit (unified_trading)
+بدون أي أوامر تداول – قراءة فقط (Suitable للـ Read-Only / Public).
+"""
+
+from pybit.unified_trading import WebSocket
+
+SYMBOL = "BTCUSDT"   # تقدر تغيّرها لـ ETHUSDT مثلاً
+DEPTH = 25           # عدد مستويات دفتر الأوامر
+
+def handle_orderbook(message: dict):
+    """هاندلر لكل تحديث من Bybit."""
+    if not isinstance(message, dict):
+        print("رسالة غير متوقعة:", message)
+        return
+
+    topic = message.get("topic", "")
+    if not topic.startswith("orderbook."):
+        return
+
+    data_list = message.get("data", [])
+    if not data_list:
+        return
+
+    # في Bybit v5 البيانات بتيجي غالباً في ليست
+    book = data_list[0]
+    bids = book.get("b", [])  # [ [price, size, ...], ... ]
+    asks = book.get("a", [])
+
+    if not bids or not asks:
+        return
+
+    top_bid = bids[0]   # أعلى سعر شراء
+    top_ask = asks[0]   # أقل سعر بيع
+
+    print("\n=== BYBIT ORDERBOOK UPDATE ===")
+    print(f"Top Bid: price={top_bid[0]}, size={top_bid[1]}")
+    print(f"Top Ask: price={top_ask[0]}, size={top_ask[1]}")
+
+def main():
+    print(f"⏳ Listening for Bybit orderbook… Symbol={SYMBOL}, Depth={DEPTH}")
+
+    # channel_type:
+    #   "linear" → لعقود USDT Perpetual مثل BTCUSDT
+    #   "spot"   → للسوق الفوري
+    ws = WebSocket(
+        testnet=False,           # لو عاوز Testnet خليها True
+        channel_type="linear",   # أو "spot" لو Spot
+    )
+
+    # الاشتراك في دفتر الأوامر
+    ws.orderbook_stream(
+        depth=DEPTH,
+        symbol=SYMBOL,
+        callback=handle_orderbook
+    )
+
+    # ما تعملش exit – خليه شغال
+    import time
+    while True:
+        time.sleep(1)
+
+if __name__ == "__main__":
+    main()

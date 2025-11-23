@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <title>ZAYA – لوحة مراقبة الفيوتشر (تجريبية)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Google Font بسيط -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;500;700&display=swap" rel="stylesheet" />
+
+    <!-- Chart.js من CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Cairo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #1f2933 0, #020617 55%);
+            color: #e5e7eb;
+        }
+
+        .page {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 24px 12px 40px;
+        }
+
+        .header {
+            margin-bottom: 18px;
+        }
+
+        .title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #facc15;
+        }
+
+        .badge {
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(34, 197, 94, 0.12);
+            color: #bbf7d0;
+            border: 1px solid rgba(34, 197, 94, 0.4);
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 2fr 1.3fr;
+            gap: 12px;
+        }
+
+        @media (max-width: 900px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* --- TABLE --- */
+        .card {
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 14px;
+            padding: 10px 10px 12px;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            backdrop-filter: blur(20px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        thead {
+            background: linear-gradient(to left, rgba(30, 64, 175, 0.7), rgba(30, 64, 175, 0.15));
+        }
+
+        th, td {
+            padding: 6px 8px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        th {
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+
+        tbody tr:nth-child(odd) {
+            background: rgba(15, 23, 42, 0.85);
+        }
+
+        tbody tr:nth-child(even) {
+            background: rgba(15, 23, 42, 0.7);
+        }
+
+        tbody tr:hover {
+            background: rgba(56, 189, 248, 0.09);
+        }
+
+        .symbol-cell {
+            font-weight: 600;
+            color: #f9fafb;
+        }
+
+        .price-binance {
+            color: #38bdf8;
+        }
+
+        .price-bybit {
+            color: #22c55e;
+        }
+
+        .spread-cell {
+            font-weight: 600;
+        }
+
+        .spread-small {
+            color: #22c55e;
+        }
+
+        .spread-medium {
+            color: #f97316;
+        }
+
+        .spread-large {
+            color: #ef4444;
+        }
+
+        .rsi-cell {
+            font-weight: 500;
+        }
+
+        .rsi-overbought {
+            color: #ef4444;
+        }
+
+        .rsi-oversold {
+            color: #22c55e;
+        }
+
+        .rsi-neutral {
+            color: #e5e7eb;
+        }
+
+        .signal-pill {
+            display: inline-flex;
+            min-width: 58px;
+            justify-content: center;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .signal-buy {
+            background: rgba(16, 185, 129, 0.15);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.6);
+        }
+
+        .signal-sell {
+            background: rgba(239, 68, 68, 0.18);
+            color: #fecaca;
+            border: 1px solid rgba(239, 68, 68, 0.7);
+        }
+
+        .signal-hold {
+            background: rgba(148, 163, 184, 0.16);
+            color: #e5e7eb;
+            border: 1px solid rgba(148, 163, 184, 0.6);
+        }
+
+        .ai-score-bar {
+            position: relative;
+            width: 80px;
+            height: 6px;
+            margin: 0 auto;
+            border-radius: 999px;
+            background: rgba(30, 64, 175, 0.35);
+            overflow: hidden;
+        }
+
+        .ai-score-fill {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            border-radius: inherit;
+            background: linear-gradient(to left, #fbbf24, #22c55e);
+            width: 0%;
+        }
+
+        .ai-score-text {
+            font-size: 0.7rem;
+            margin-top: 2px;
+            color: #9ca3af;
+        }
+
+        .footer-note {
+            margin-top: 8px;
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        /* --- CHART CARD --- */
+        .chart-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chart-sub {
+            font-size: 0.7rem;
+            color: #9ca3af;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 210px !important;
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <header class="header">
+        <div class="title-row">
+            <div class="title">ZAYA – لوحة مراقبة الفيوتشر AI (تجريبية)</div>
+            <div class="badge">LIVE – Test Mode (Binance + Bybit)</div>
+        </div>
+        <div class="subtitle">
+            مراقبة مباشرة لثلاثة رموز فيوتشر: <strong>BTCUSDT – ETHUSDT – SOLUSDT</strong> مع فروقات الأسعار بين Binance و Bybit،
+            وبعض مؤشرات الزخم لمساعدتك في قرار السكالبينج.
+        </div>
+    </header>
+
+    <main class="layout">
+        <!-- الجدول الرئيسي -->
+        <section class="card">
+            <table>
+                <thead>
+                <tr>
+                    <th>الزوج</th>
+                    <th>سعر Binance</th>
+                    <th>سعر Bybit</th>
+                    <th>السبريد (Bybit - Binance)</th>
+                    <th>RSI (تقديري)</th>
+                    <th>إشارة AI</th>
+                    <th>قوة الإشارة (0–100)</th>
+                    <th>آخر تحديث</th>
+                </tr>
+                </thead>
+                <tbody id="pairs-body">
+                <tr data-symbol="BTCUSDT">
+                    <td class="symbol-cell">BTCUSDT</td>
+                    <td class="price-binance">–</td>
+                    <td class="price-bybit">–</td>
+                    <td class="spread-cell">–</td>
+                    <td class="rsi-cell">–</td>
+                    <td><span class="signal-pill signal-hold">HOLD</span></td>
+                    <td>
+                        <div class="ai-score-bar">
+                            <div class="ai-score-fill"></div>
+                        </div>
+                        <div class="ai-score-text">0%</div>
+                    </td>
+                    <td>–</td>
+                </tr>
+                <tr data-symbol="ETHUSDT">
+                    <td class="symbol-cell">ETHUSDT</td>
+                    <td class="price-binance">–</td>
+                    <td class="price-bybit">–</td>
+                    <td class="spread-cell">–</td>
+                    <td class="rsi-cell">–</td>
+                    <td><span class="signal-pill signal-hold">HOLD</span></td>
+                    <td>
+                        <div class="ai-score-bar">
+                            <div class="ai-score-fill"></div>
+                        </div>
+                        <div class="ai-score-text">0%</div>
+                    </td>
+                    <td>–</td>
+                </tr>
+                <tr data-symbol="SOLUSDT">
+                    <td class="symbol-cell">SOLUSDT</td>
+                    <td class="price-binance">–</td>
+                    <td class="price-bybit">–</td>
+                    <td class="spread-cell">–</td>
+                    <td class="rsi-cell">–</td>
+                    <td><span class="signal-pill signal-hold">HOLD</span></td>
+                    <td>
+                        <div class="ai-score-bar">
+                            <div class="ai-score-fill"></div>
+                        </div>
+                        <div class="ai-score-text">0%</div>
+                    </td>
+                    <td>–</td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="footer-note">
+                * البيانات للاستخدام التعليمي / التجريبي فقط، وليست توصية استثمارية أو تداول مباشر.
+            </div>
+        </section>
+
+        <!-- كارت المنحنى -->
+        <section class="card">
+            <div class="chart-title">
+                <span>منحنى سعر BTCUSDT (متوسط Binance / Bybit)</span>
+                <span class="chart-sub" id="chart-status">في انتظار البيانات…</span>
+            </div>
+            <canvas id="btcChart"></canvas>
+        </section>
+    </main>
+</div>
+
+<script>
+    // تخزين تاريخ الأسعار لـ BTC لرسم المنحنى
+    const btcHistory = {
+        labels: [],
+        values: []
+    };
+
+    let btcChart = null;
+
+    function initChart() {
+        const ctx = document.getElementById('btcChart').getContext('2d');
+        btcChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: btcHistory.labels,
+                datasets: [{
+                    label: 'BTCUSDT mid-price',
+                    data: btcHistory.values,
+                    borderColor: '#38bdf8',
+                    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                    borderWidth: 1.5,
+                    tension: 0.25,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    x: {
+                        display: false
+                    },
+                    y: {
+                        display: true,
+                        ticks: {
+                            color: '#9ca3af',
+                            font: { size: 10 }
+                        },
+                        grid: {
+                            color: 'rgba(55,65,81,0.4)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateChart(midPrice) {
+        const maxPoints = 60; // آخر 60 نقطة
+        const now = new Date();
+        const label = now.toLocaleTimeString('ar-EG', { hour12: false });
+
+        btcHistory.labels.push(label);
+        btcHistory.values.push(midPrice);
+
+        if (btcHistory.labels.length > maxPoints) {
+            btcHistory.labels.shift();
+            btcHistory.values.shift();
+        }
+
+        if (btcChart) {
+            btcChart.update('none');
+        }
+    }
+
+    function classifySpread(spread) {
+        const abs = Math.abs(spread);
+        if (abs < 1) return 'small';
+        if (abs < 5) return 'medium';
+        return 'large';
+    }
+
+    function pseudoRSI(symbol, spread) {
+        // مجرد تقدير بسيط مؤقت – لغاية ما نربطه بالـ AI الحقيقي
+        const base = symbol === 'BTCUSDT' ? 50 : (symbol === 'ETHUSDT' ? 52 : 48);
+        return Math.max(30, Math.min(70, base + spread / 3));
+    }
+
+    function computeSignal(rsi, spread) {
+        if (rsi > 66 && spread > 0) return 'SELL';
+        if (rsi < 34 && spread < 0) return 'BUY';
+        return 'HOLD';
+    }
+
+    function aiScore(rsi, spread) {
+        const vol = Math.min(1, Math.abs(spread) / 15); // 0 – 1
+        const dist = Math.abs(rsi - 50) / 30;          // 0 – 1 تقريبًا
+        return Math.round(100 * 0.6 * dist + 100 * 0.4 * vol);
+    }
+
+    function updateRow(symbol, snapshot) {
+        const row = document.querySelector(`tr[data-symbol="${symbol}"]`);
+        if (!row) return;
+
+        const binancePrice = snapshot.binance_price ?? null;
+        const bybitPrice = snapshot.bybit_price ?? null;
+        const ts = snapshot.timestamp ?? null;
+
+        const binanceCell = row.querySelector('.price-binance');
+        const bybitCell = row.querySelector('.price-bybit');
+        const spreadCell = row.querySelector('.spread-cell');
+        const rsiCell = row.querySelector('.rsi-cell');
+        const signalPill = row.querySelector('.signal-pill');
+        const scoreBar = row.querySelector('.ai-score-fill');
+        const scoreText = row.querySelector('.ai-score-text');
+        const lastUpdateCell = row.querySelector('td:last-child');
+
+        if (binancePrice && bybitPrice) {
+            binanceCell.textContent = binancePrice.toFixed(2);
+            bybitCell.textContent = bybitPrice.toFixed(2);
+
+            const spread = bybitPrice - binancePrice;
+            spreadCell.textContent = spread.toFixed(2);
+
+            spreadCell.classList.remove('spread-small', 'spread-medium', 'spread-large');
+            const spreadClass = classifySpread(spread);
+            if (spreadClass === 'small') spreadCell.classList.add('spread-small');
+            else if (spreadClass === 'medium') spreadCell.classList.add('spread-medium');
+            else spreadCell.classList.add('spread-large');
+
+            const rsi = pseudoRSI(symbol, spread);
+            rsiCell.textContent = rsi.toFixed(1);
+
+            rsiCell.classList.remove('rsi-neutral', 'rsi-overbought', 'rsi-oversold');
+            if (rsi >= 65) rsiCell.classList.add('rsi-overbought');
+            else if (rsi <= 35) rsiCell.classList.add('rsi-oversold');
+            else rsiCell.classList.add('rsi-neutral');
+
+            const sig = computeSignal(rsi, spread);
+            signalPill.textContent = sig;
+            signalPill.classList.remove('signal-buy', 'signal-sell', 'signal-hold');
+            if (sig === 'BUY') signalPill.classList.add('signal-buy');
+            else if (sig === 'SELL') signalPill.classList.add('signal-sell');
+            else signalPill.classList.add('signal-hold');
+
+            const score = aiScore(rsi, spread);
+            scoreBar.style.width = `${score}%`;
+            scoreText.textContent = `${score}%`;
+
+            if (ts) {
+                const d = new Date(ts * 1000);
+                lastUpdateCell.textContent = d.toLocaleTimeString('ar-EG', { hour12: false });
+            }
+
+            // لو BTCUSDT حدّثنا – نحدّث المنحنى
+            if (symbol === 'BTCUSDT') {
+                const mid = (binancePrice + bybitPrice) / 2;
+                updateChart(mid);
+                document.getElementById('chart-status').textContent = 'يتم التحديث لحظيًا من WebSocket';
+            }
+        }
+    }
+
+    async function fetchLiveFeed() {
+        try {
+            const res = await fetch('/api/live-feed?ts=' + Date.now());
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+
+            if (data['BTCUSDT']) updateRow('BTCUSDT', data['BTCUSDT']);
+            if (data['ETHUSDT']) updateRow('ETHUSDT', data['ETHUSDT']);
+            if (data['SOLUSDT']) updateRow('SOLUSDT', data['SOLUSDT']);
+        } catch (err) {
+            console.error('Fetch live feed error:', err);
+            document.getElementById('chart-status').textContent = 'مشكلة في جلب البيانات (تحقق من السيرفر)…';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initChart();
+        fetchLiveFeed();
+        setInterval(fetchLiveFeed, 1000); // كل ثانية
+    });
+</script>
+</body>
+</html>

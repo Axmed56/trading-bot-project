@@ -1,0 +1,29 @@
+{
+  "symbol": "BTCUSDT",
+  "best_bid": [
+    84250.6,
+    7.914
+  ],
+  "best_ask": [
+    84250.7,
+    0.017
+  ],
+  "spread": 0.09999999999126885,
+  "last_trade": {
+    "side": "Buy",
+    "price": 84250.7,
+    "size": 0.005,
+    "ts": 1763784582934
+  },
+  "last_kline": {
+    "start": 1763784540000,
+    "end": 1763784599999,
+    "open": 84245.7,
+    "high": 84265.6,
+    "low": 84207.5,
+    "close": 84250.7,
+    "volume": 14.002
+  },
+  "orderflow_bias": "Neutral",
+  "last_update_ts": 1763784582.2752059
+}

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>ZAYA – لوحة مراقبة الفيوتشر</title>
+
+    <style>
+        body {
+            background: #0d1117;
+            color: #fff;
+            font-family: Tahoma, sans-serif;
+            text-align: center;
+            padding: 30px;
+        }
+
+        h1 {
+            color: #4fd1c5;
+        }
+
+        table {
+            width: 90%;
+            margin: auto;
+            border-collapse: collapse;
+            margin-top: 25px;
+            background: #161b22;
+        }
+
+        th, td {
+            border: 1px solid #30363d;
+            padding: 10px;
+        }
+
+        th {
+            background: #21262d;
+            color: #58a6ff;
+        }
+
+        .green { color: #00ff9d; font-weight: bold; }
+        .red { color: #ff5c5c; font-weight: bold; }
+        .yellow { color: #ffdd57; font-weight: bold; }
+
+        .timestamp {
+            margin-top: 20px;
+            color: #9ba1a6;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>ZAYA – لوحة مراقبة الفيوتشر (تجريبية)</h1>
+
+    <p>تحديث الأسعار من Binance + Bybit عبر Websocket</p>
+
+    <table id="live-table">
+        <thead>
+            <tr>
+                <th>الزوج</th>
+                <th>سعر Binance</th>
+                <th>سعر Bybit</th>
+                <th>السبريد</th>
+                <th>آخر تحديث</th>
+            </tr>
+        </thead>
+
+        <tbody id="table-body">
+            <tr><td colspan="5">جاري التحميل...</td></tr>
+        </tbody>
+    </table>
+
+    <p class="timestamp" id="last-update">---</p>
+
+    <script>
+        async function loadFeed() {
+            try {
+                const response = await fetch("/api/live-feed?ts=" + Date.now());
+                const data = await response.json();
+
+                let tbody = "";
+                Object.keys(data).forEach(symbol => {
+
+                    const row = data[symbol];
+                    let spreadColor = row.spread >= 0 ? "green" : "red";
+
+                    tbody += `
+                        <tr>
+                            <td>${symbol}</td>
+                            <td>${row.binance_price}</td>
+                            <td>${row.bybit_price}</td>
+                            <td class="${spreadColor}">${row.spread}</td>
+                            <td>${new Date(row.timestamp).toLocaleTimeString()}</td>
+                        </tr>
+                    `;
+                });
+
+                document.getElementById("table-body").innerHTML = tbody;
+                document.getElementById("last-update").innerText =
+                    "آخر تحديث: " + new Date().toLocaleTimeString();
+
+            } catch (err) {
+                console.log("Error:", err);
+            }
+        }
+
+        setInterval(loadFeed, 1000);
+        loadFeed();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+ccxt
+websockets
+aiohttp
+asyncio
+numpy
+pandas
+rich
