@@ -1,7 +1,9 @@
-import pandas as pd
-import numpy as np
-from datetime import datetime
+import argparse
 import os
+from datetime import datetime
+
+import numpy as np
+import pandas as pd
 
 # ================= إعدادات البوت الأساسية =================
 
@@ -75,7 +77,41 @@ def load_ohlcv(path="ohlcv.csv"):
         if col not in df.columns:
             raise ValueError(f"❌ ملف {path} لا يحتوي على العمود المطلوب: {col}")
     print(f"✅ تم تحميل {len(df)} شمعة من {path}")
+    df = df.sort_values("timestamp").reset_index(drop=True)
     return df
+
+
+def summarize_performance(trades_df: pd.DataFrame, initial_balance: float):
+    if trades_df.empty:
+        print("⚠️ لا توجد أي صفقات لعرضها.")
+        return
+
+    exits = trades_df[trades_df["type"].isin(["STOPLOSS", "TAKEPROFIT", "SIGNAL_EXIT"])].copy()
+    exits_pnl = exits.get("pnl", pd.Series(dtype=float))
+    total_pnl = exits_pnl.sum()
+    wins = (exits_pnl > 0).sum()
+    losses = (exits_pnl < 0).sum()
+    win_rate = (wins / max(1, len(exits))) * 100
+
+    equity_curve = trades_df.get("balance", pd.Series(dtype=float)).ffill()
+    if equity_curve.empty:
+        final_balance = initial_balance
+        max_dd = 0.0
+        max_dd_pct = 0.0
+    else:
+        final_balance = equity_curve.iloc[-1]
+        rolling_peak = equity_curve.expanding().max()
+        drawdowns = equity_curve - rolling_peak
+        max_dd = drawdowns.min()
+        max_dd_pct = ((drawdowns / rolling_peak).min()) * 100
+
+    print("\n📊 ملخص الأداء:")
+    print(f"- إجمالي الصفقات المغلقة: {len(exits)}")
+    print(f"- نسبة الربح: {win_rate:.2f}% ({wins} فوز / {losses} خسارة)")
+    print(f"- إجمالي الربح/الخسارة: {total_pnl:.2f} USDT")
+    print(f"- الرصيد النهائي: {final_balance:.2f} USDT (بداية من {initial_balance:.2f})")
+    print(f"- أقصى سحب (Absolute): {max_dd:.2f} USDT")
+    print(f"- أقصى سحب (٪): {max_dd_pct:.2f}%")
 
 
 # ================= توليد الإشارات =================
@@ -166,7 +202,26 @@ def run_paper_backtest(ohlcv_path="ohlcv.csv", trades_out_path="backtest_trades.
 
                 print(f"📤 {exit_reason} | {side} @ {entry_price:.2f} → {price:.2f} | pnl={pnl:.2f} | balance={balance:.2f}")
                 position = None
-                continue  # ننتقل للشمعة التالية بعد الإغلاق
+
+            # خروج لو ظهر إشارة عكسية بدون ملامسة SL/TP
+            elif (signal == 1 and side == "sell") or (signal == -1 and side == "buy"):
+                direction = 1 if side == "buy" else -1
+                pnl = (price - entry_price) * amount * direction
+                balance += pnl
+
+                trades.append({
+                    "time": ts,
+                    "type": "SIGNAL_EXIT",
+                    "side": side,
+                    "entry_price": entry_price,
+                    "exit_price": price,
+                    "amount": amount,
+                    "pnl": pnl,
+                    "balance": balance
+                })
+
+                print(f"📤 SIGNAL EXIT | {side} @ {entry_price:.2f} → {price:.2f} | pnl={pnl:.2f} | balance={balance:.2f}")
+                position = None
 
         # فتح مركز جديد لو مفيش صفقة مفتوحة
         if position is None and signal != 0:
@@ -208,11 +263,43 @@ def run_paper_backtest(ohlcv_path="ohlcv.csv", trades_out_path="backtest_trades.
     print(f"\n✅ تم حفظ نتائج المحاكاة في: {trades_out_path}")
     print(f"🔚 الرصيد النهائي: {balance:.2f} USDT")
 
+    summarize_performance(trades_df, float(cfg.get("initial_balance", 0)))
+
     return trades_df
 
 
 # ================= نقطة الدخول الرئيسية =================
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="محاكاة تداول بسيطة باستخدام تقاطع متوسطات + RSI")
+    parser.add_argument("--ohlcv-path", default="ohlcv.csv", help="مسار ملف بيانات OHLCV")
+    parser.add_argument("--save-trades", default="backtest_trades.csv", help="مسار حفظ نتائج الصفقات")
+    parser.add_argument("--amount-usd", type=float, default=DEFAULT_CONFIG["amount_usd"], help="حجم الصفقة بالدولار")
+    parser.add_argument("--stop-loss-pct", type=float, default=DEFAULT_CONFIG["stop_loss_pct"], help="نسبة وقف الخسارة")
+    parser.add_argument("--take-profit-pct", type=float, default=DEFAULT_CONFIG["take_profit_pct"], help="نسبة جني الأرباح")
+    parser.add_argument("--sma-fast", type=int, default=DEFAULT_CONFIG["sma_fast"], help="طول الموفنج السريع")
+    parser.add_argument("--sma-slow", type=int, default=DEFAULT_CONFIG["sma_slow"], help="طول الموفنج البطيء")
+    parser.add_argument("--rsi-period", type=int, default=DEFAULT_CONFIG["rsi_period"], help="طول RSI")
+    parser.add_argument("--rsi-buy", type=int, default=DEFAULT_CONFIG["rsi_buy"], help="فلتر شراء RSI")
+    parser.add_argument("--rsi-sell", type=int, default=DEFAULT_CONFIG["rsi_sell"], help="فلتر بيع RSI")
+    parser.add_argument("--initial-balance", type=float, default=DEFAULT_CONFIG["initial_balance"], help="الرصيد الابتدائي للمحاكاة")
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    print("🚀 تشغيل محاكاة التداول (Paper Trading) برصيد افتراضي...")
-    run_paper_backtest()
+    args = parse_args()
+    cfg = DEFAULT_CONFIG.copy()
+    cfg.update({
+        "amount_usd": args.amount_usd,
+        "stop_loss_pct": args.stop_loss_pct,
+        "take_profit_pct": args.take_profit_pct,
+        "sma_fast": args.sma_fast,
+        "sma_slow": args.sma_slow,
+        "rsi_period": args.rsi_period,
+        "rsi_buy": args.rsi_buy,
+        "rsi_sell": args.rsi_sell,
+        "initial_balance": args.initial_balance,
+    })
+
+    print("🚀 تشغيل محاكاة التداول (Paper Trading) مع إمكانية تخصيص الإعدادات...")
+    run_paper_backtest(args.ohlcv_path, args.save_trades, cfg)
